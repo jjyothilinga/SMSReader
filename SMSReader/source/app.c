@@ -26,13 +26,24 @@
 * Variables
 *------------------------------------------------------------------------------
 */
-
+ const UINT8 index[] = "+CMTI";
+ const UINT8 data[]  = "+CMGR";
 
 /*------------------------------------------------------------------------------
 * Private Functions
 *------------------------------------------------------------------------------
 */
 
+typedef struct _APP
+{
+	UINT8 message[MAX_MESSAGE_SIZE];
+	UINT8 smsIndex[50];
+	UINT8 buffIndex;
+	UINT8 smsCounter;
+	UINT8 currIndex;
+}APP;
+
+APP app = {0};
 
 UINT8 APP_comCallBack( far UINT8 *rxPacket, far UINT8* txCode,far UINT8** txPacket);
 
@@ -62,7 +73,17 @@ void APP_init(void)
 */
 void APP_task(void)
 {
-
+	if(app.smsCounter > 0)
+	{
+		LCD_clear( );
+		if(app.smsIndex[app.currIndex] != '\0')
+		{
+			LCD_putChar(app.smsIndex[app.currIndex]);
+			app.currIndex++;
+		}
+		app.currIndex++;
+		app.smsCounter--;	
+	}
 
 }
 
@@ -85,75 +106,7 @@ void APP_readEEPROM( UINT8 *buffer )
 		Busy_eep();
 	}
 }
-void APP_incrementAndCall(UINT8 *buffer)
-{
-	UINT8 i;
-	BOOL flag = FALSE;
-	
-	
-	//increment buffer value
-	if( buffer[2] < '9')
-		buffer[2]++;
-	else
-	{
-		buffer[2] = '0';
-		
-		if(buffer[1] < '9')
-			buffer[1]++;		
-		else
-		{
-			buffer[1] = '0';
 
-			if(buffer[0] < '9')
-				buffer[0]++;
-			else
-				flag = TRUE;
-		}
-	}
-	
-	//Reset buffer if it exceeds its limit
-	if(flag == TRUE)
-	{
-		for(i = 0; i < MAX_OUTPUT_CHARS; i++)
-			buffer[i] = '0';
-	}
-
-	COM_txCMD( DEVICE_ADDRESS, buffer, 3);
-
-}
-
-
-
-void APP_decrementAndCall(UINT8 *buffer)
-{
-	UINT8 i;
-	BOOL flag = FALSE;
-
-	//decrement buffer value
-	if(buffer[2] > '0')
-		buffer[2]--;
-	else if( buffer[1] > '0' )
-	{
-		buffer[1]--;	
-		buffer[2] = '9';
-	}	
-	else if( buffer[0] > '0' )
-	{
-		buffer[0]--;
-		buffer[1] = '9';
-		buffer[2] = '9';
-	}
-	else
-		flag = TRUE;
-		
-	if( flag == TRUE )
-	{
-		for(i = 0; i < MAX_OUTPUT_CHARS; i++)
-			buffer[i] = '9';
-	}
-
-	COM_txCMD( DEVICE_ADDRESS, buffer, 3);
-}
 
 void APP_call( UINT8 *buffer )
 {
@@ -169,43 +122,25 @@ UINT8 APP_comCallBack( far UINT8 *rxPacket, far UINT8* txCode,far UINT8** txPack
 
 	UINT8 i;
 
-	UINT8 rxCode = rxPacket[0];
+	//UINT8 rxCode = rxPacket[0];
 	UINT8 length = 0;
 
-	switch( rxCode )
+	if (strncmp(rxPacket,index,5) == 0 )
 	{
-		case CMD_GET_STATUS:
+		i =12;
+		while(rxPacket[ i] != '\0')
+		{
+			app.smsIndex[app.buffIndex++ ] = rxPacket[ i++];
+		}
+		app.smsIndex[app.buffIndex++ ]= '\0';
 
-			*txCode = CMD_GET_STATUS;
-			break;
-
-		case CMD_RESOLVE_ISSUE:
-		
-			*txCode = CMD_RESOLVE_ISSUE;
-			length = 0;
-			
-			break;
-
-		case CMD_CLEAR_ISSUES:
-		
-			*txCode = CMD_CLEAR_ISSUES;
-			length = 0;
-			
-			break;
-
-	
-
-		case CMD_PING:
-			length = 0;
-			*txCode = CMD_PING;
-			break;
-
-		default:
-			length = 0;
-			*txCode = COM_RESP_INVALID_CMD;
-			break;
-
+		if(app.buffIndex >= MAX_MESSAGE_SIZE)
+			app.buffIndex = 0;
+		app.smsCounter++;	
 	}
+
+
+//		if(strcmp ( , &data) == TRUE)
 
 	return length;
 

@@ -39,21 +39,25 @@
 //#define KEYPAD_TEST
 
 //COM module configuration
+#define _NO_CHECKSUM_
+
 #define __BCC_XOR__
 #define __RESPONSE_ENABLED__
 //#define __UART_TEST__
 //#define __LOOP_BACK__
 #define BROADCAST_ADDRESS		0xFA
 #define CMD_SOP	0xAA
-#define CMD_EOP 0xBB
+#define CMD_EOP 0x0A
 #define RESP_SOP	0xCC
 #define RESP_EOP	0xDD
+
+#define NO_SOP
 
 #define UART1_BAUDRATE	62500
 enum
 {
-	RX_PACKET_SIZE = 128,
-	TX_PACKET_SIZE = 128
+	RX_PACKET_SIZE = 100,
+	TX_PACKET_SIZE = 100
 };
 
 #define 	RECEIVER_MAX_PAKET_SIZE		(RX_PACKET_SIZE)	
@@ -78,6 +82,7 @@ enum
 #define EEP_EXTERRNAL
 
 #define EEPROM_ADD 0
+#define MAX_MESSAGE_SIZE	160
 /*
 *------------------------------------------------------------------------------
 * Public Data Types
